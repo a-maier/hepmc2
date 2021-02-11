@@ -54,7 +54,7 @@ impl FourVector {
     }
 
     pub fn txyz(t: f64, x: f64, y: f64, z: f64) -> Self {
-        FourVector{0: [t, x, y, z]}
+        FourVector { 0: [t, x, y, z] }
     }
 }
 
@@ -73,16 +73,16 @@ impl std::ops::IndexMut<usize> for FourVector {
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone)]
-pub struct CrossSection{
+pub struct CrossSection {
     pub cross_section: f64,
     pub cross_section_error: f64,
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone)]
-pub struct PdfInfo{
+pub struct PdfInfo {
     pub parton_id: [i32; 2],
     pub x: [f64; 2],
     pub scale: f64,
     pub xf: [f64; 2],
-    pub pdf_id: [i32; 2]
+    pub pdf_id: [i32; 2],
 }
