@@ -311,7 +311,7 @@ fn parse_pdf_info_line(line: &str, event: &mut Event) -> Result<(), ParseError> 
         recognize_float, whitespace, // xf0
         recognize_float, whitespace, // xf1
         opt(int), whitespace, // pdf_id0
-        opt(int), whitespace, // pdf_id1
+        opt(int), // pdf_id1
     ))(line)?;
     let (
         _, _,
@@ -323,7 +323,7 @@ fn parse_pdf_info_line(line: &str, event: &mut Event) -> Result<(), ParseError> 
         xf0, _,
         xf1, _,
         pdf_id0, _,
-        pdf_id1, _,
+        pdf_id1,
     ) = parsed;
     let pdf_info = PdfInfo{
         parton_id: [id0.parse()?, id1.parse()?],
