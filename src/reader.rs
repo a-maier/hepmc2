@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::default::Default;
 use std::fmt::{self, Display};
 use std::io::{self, BufRead};
@@ -256,7 +256,7 @@ fn parse_particle_line(line: &str, event: &mut Event) -> Result<(), ParseError> 
         end_vtx_code, _,
         flowsize
     ) = parsed;
-    let mut flows = HashMap::new();
+    let mut flows = BTreeMap::new();
     for _ in 0..flowsize.parse()? {
         let (rem, flowidx) = preceded(whitespace, int)(rest)?;
         let flowidx = flowidx.parse()?;

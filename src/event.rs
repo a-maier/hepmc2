@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Scattering event
 #[derive(Debug, PartialEq, Default, Clone)]
@@ -41,7 +41,7 @@ pub struct Particle {
     pub status: i32,
     pub theta: f64,
     pub phi: f64,
-    pub flows: HashMap<i32, i32>,
+    pub flows: BTreeMap<i32, i32>,
     pub end_vtx: i32,
 }
 
