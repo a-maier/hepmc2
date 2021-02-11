@@ -58,6 +58,20 @@ impl FourVector {
     }
 }
 
+impl std::ops::Index<usize> for FourVector {
+    type Output = f64;
+
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.0[idx]
+    }
+}
+
+impl std::ops::IndexMut<usize> for FourVector {
+    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
+        &mut self.0[idx]
+    }
+}
+
 #[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone)]
 pub struct CrossSection{
     pub cross_section: f64,
