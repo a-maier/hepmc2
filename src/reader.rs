@@ -75,7 +75,10 @@ impl<T: BufRead> Reader<T> {
                 Some(b'P') => parse_particle_line(&self.line, &mut event)?,
                 Some(b'U') => parse_units_line(&self.line, &mut event)?,
                 Some(b'F') => parse_pdf_info_line(&self.line, &mut event)?,
-                Some(b'H') => parse_heavy_ion_line(&self.line, &mut event)?,
+                Some(b'H') => {
+                    if self.line.starts_with("HepMC") { continue; }
+                    parse_heavy_ion_line(&self.line, &mut event)?
+                },
                 Some(b'N') => parse_weight_names_line(&self.line, &mut event)?,
                 Some(b'C') => parse_xs_info_line(&self.line, &mut event)?,
                 _ => return Err(ParseError::BadPrefix),
