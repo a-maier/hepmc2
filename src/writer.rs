@@ -29,6 +29,11 @@ impl<T: Write> Writer<T> {
         Self::with_header(stream, DEFAULT_HEADER)
     }
 
+    /// Retrieve the underlying writer
+    pub fn into_inner(self) -> T {
+        self.stream
+    }
+
     pub fn with_header<U: Display>(
         stream: T,
         header: U,

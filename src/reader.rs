@@ -26,9 +26,16 @@ pub struct Reader<T> {
     line_nr: usize,
 }
 
-impl<T: BufRead + Default> Reader<T> {
-    pub fn new() -> Self {
-        Self::default()
+impl<T> Reader<T> {
+    /// Retrieve the underlying reader
+    pub fn into_inner(self) -> T {
+        self.stream
+    }
+}
+
+impl<T: BufRead> Reader<T> {
+    pub fn new(stream: T) -> Self {
+        stream.into()
     }
 }
 
