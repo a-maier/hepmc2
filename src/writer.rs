@@ -98,7 +98,7 @@ impl<T: Write> Writer<T> {
             vertex.y,
             vertex.z,
             vertex.t,
-            vertex.particles_out.len(),
+            vertex.particles_in.len() + vertex.particles_out.len(),
             vertex.weights.len()
         )?;
         for weight in &vertex.weights {
