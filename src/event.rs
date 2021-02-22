@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 
+use serde::{Serialize, Deserialize};
+
 /// Scattering event
-#[derive(Debug, PartialEq, Default, Clone)]
+#[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct Event {
     pub number: i32,
     pub mpi: i32,
@@ -20,7 +22,7 @@ pub struct Event {
     pub length_unit: String,
 }
 
-#[derive(Debug, PartialEq, Default, Clone)]
+#[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct Vertex {
     pub barcode: i32,
     pub status: i32,
@@ -33,7 +35,7 @@ pub struct Vertex {
     pub particles_out: Vec<Particle>,
 }
 
-#[derive(Debug, PartialEq, Default, Clone)]
+#[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct Particle {
     pub id: i32,
     pub p: FourVector,
@@ -45,7 +47,7 @@ pub struct Particle {
     pub end_vtx: i32,
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct FourVector(pub [f64; 4]);
 
 impl FourVector {
@@ -72,13 +74,13 @@ impl std::ops::IndexMut<usize> for FourVector {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct CrossSection {
     pub cross_section: f64,
     pub cross_section_error: f64,
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct PdfInfo {
     pub parton_id: [i32; 2],
     pub x: [f64; 2],
