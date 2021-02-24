@@ -29,6 +29,7 @@ mod tests {
         let mut buf2 = Vec::<u8>::new();
         let mut writer = writer::Writer::try_from(&mut buf2).unwrap();
         writer.write(&event).unwrap();
+        writer.finish().unwrap();
         use std::str::from_utf8;
         assert_eq!(from_utf8(&buf), from_utf8(&buf2));
     }

@@ -1,26 +1,50 @@
 use std::default::Default;
 use std::fmt::Display;
 use std::io::{self, Write};
+use std::mem::take;
 
 use crate::event::*;
+
+use log::error;
 
 const DEFAULT_HEADER: &str = "HepMC::Version 2.06.09
 HepMC::IO_GenEvent-START_EVENT_LISTING
 ";
 
+const DEFAULT_FOOTER: &[u8] = b"HepMC::IO_GenEvent-END_EVENT_LISTING\n";
+
 /// Writer for the HepMC2 format
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
-pub struct Writer<T> {
+pub struct Writer<T: Write> {
     stream: T,
+    finished: bool,
 }
 
 impl<T: Write + Default> Writer<T> {
     pub fn new() -> Self {
         Self::default()
     }
+
+    /// Retrieve the underlying writer
+    pub fn into_inner(mut self) -> T {
+        // ensure that the destructor doesn't do anything
+        self.finished = true;
+        take(&mut self.stream)
+    }
+
 }
 
 impl<T: Write> Writer<T> {
+    pub fn finish(mut self) -> Result<(), std::io::Error> {
+        self.ref_finish()
+    }
+
+    fn ref_finish(&mut self) -> Result<(), std::io::Error> {
+        self.stream.write_all(DEFAULT_FOOTER)?;
+        self.finished = true;
+        Ok(())
+    }
+
     fn write_header<U: Display>(&mut self, header: U) -> Result<(), io::Error> {
         write!(self.stream, "{}", header)
     }
@@ -29,16 +53,11 @@ impl<T: Write> Writer<T> {
         Self::with_header(stream, DEFAULT_HEADER)
     }
 
-    /// Retrieve the underlying writer
-    pub fn into_inner(self) -> T {
-        self.stream
-    }
-
     pub fn with_header<U: Display>(
         stream: T,
         header: U,
     ) -> Result<Self, io::Error> {
-        let mut writer = Self { stream };
+        let mut writer = Self { stream, finished: false };
         writer.write_header(header)?;
         Ok(writer)
     }
@@ -175,5 +194,15 @@ impl<T: Write> Writer<T> {
             pdf.pdf_id[0],
             pdf.pdf_id[1],
         )
+    }
+}
+
+impl<T: Write> Drop for Writer<T> {
+    fn drop(&mut self) {
+        if !self.finished {
+            error!("Hepmc2 writer dropped before finished.");
+            error!("Call finish() manually to fix this error.");
+            self.ref_finish().unwrap()
+        }
     }
 }

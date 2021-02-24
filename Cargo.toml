@@ -12,5 +12,5 @@ repository = "https://github.com/a-maier/hepmc2"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-#log = "0.4"
+log = "0.4"
 nom = "6"
