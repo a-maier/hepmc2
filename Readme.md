@@ -34,4 +34,5 @@ for event in in_events {
    let event = event?;
    writer.write(&event)?
 }
+writer.finish()?
 ```
