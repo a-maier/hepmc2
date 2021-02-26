@@ -21,10 +21,6 @@ pub struct Writer<T: Write> {
 }
 
 impl<T: Write + Default> Writer<T> {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Retrieve the underlying writer
     pub fn into_inner(mut self) -> T {
         // ensure that the destructor doesn't do anything
@@ -34,24 +30,46 @@ impl<T: Write + Default> Writer<T> {
 }
 
 impl<T: Write> Writer<T> {
-    pub fn finish(mut self) -> Result<(), std::io::Error> {
-        self.ref_finish()
-    }
-
-    fn ref_finish(&mut self) -> Result<(), std::io::Error> {
-        self.stream.write_all(DEFAULT_FOOTER)?;
-        self.finished = true;
-        Ok(())
-    }
-
-    fn write_header<U: Display>(&mut self, header: U) -> Result<(), io::Error> {
-        write!(self.stream, "{}", header)
-    }
-
-    pub fn try_from(stream: T) -> Result<Self, io::Error> {
+    /// Construct new `Writer`
+    ///
+    /// This automatically tries to write the mandatory HepMC header,
+    /// which may fail.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # fn try_main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use hepmc2::writer::Writer;
+    ///
+    /// let mut output = Vec::new();
+    /// let mut writer = Writer::new(&mut output)?;
+    /// // always call finish at the end
+    /// writer.finish()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new(stream: T) -> Result<Self, io::Error> {
         Self::with_header(stream, DEFAULT_HEADER)
     }
 
+    /// Construct new `Writer`, trying to write a custom header
+    ///
+    /// `hepmc2` ignores headers, but other implementations of the
+    /// format may be less lenient.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # fn try_main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use hepmc2::writer::Writer;
+    ///
+    /// let mut output = Vec::new();
+    /// let mut writer = Writer::with_header(output, "")?;
+    /// // always call finish at the end
+    /// writer.finish()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn with_header<U: Display>(
         stream: T,
         header: U,
@@ -61,6 +79,45 @@ impl<T: Write> Writer<T> {
         Ok(writer)
     }
 
+    /// Finish writing, consuming the `Writer`
+    ///
+    /// This tries to write the mandatory HepMC footer, which may fail.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # fn try_main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use hepmc2::writer::Writer;
+    ///
+    /// let mut output = Vec::new();
+    /// let mut writer = Writer::new(&mut output)?;
+    /// // always call finish at the end
+    /// writer.finish()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn finish(mut self) -> Result<(), std::io::Error> {
+        self.ref_finish()
+    }
+
+    /// Write an event
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # fn try_main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use hepmc2::writer::Writer;
+    /// use hepmc2::event::Event;
+    ///
+    /// let mut output = Vec::new();
+    /// let mut writer = Writer::new(&mut output)?;
+    /// let event = Event::default();
+    /// writer.write(&event)?;
+    /// // always call finish at the end
+    /// writer.finish()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn write(&mut self, event: &Event) -> Result<(), io::Error> {
         self.write_event_line(&event)?;
         if !event.weight_names.is_empty() {
@@ -80,6 +137,20 @@ impl<T: Write> Writer<T> {
             }
         }
         Ok(())
+    }
+
+    pub fn try_from(stream: T) -> Result<Self, io::Error> {
+        Self::with_header(stream, DEFAULT_HEADER)
+    }
+
+    fn ref_finish(&mut self) -> Result<(), std::io::Error> {
+        self.stream.write_all(DEFAULT_FOOTER)?;
+        self.finished = true;
+        Ok(())
+    }
+
+    fn write_header<U: Display>(&mut self, header: U) -> Result<(), io::Error> {
+        write!(self.stream, "{}", header)
     }
 
     fn write_event_line(&mut self, event: &Event) -> Result<(), io::Error> {

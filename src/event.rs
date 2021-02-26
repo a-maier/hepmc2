@@ -22,6 +22,7 @@ pub struct Event {
     pub length_unit: String,
 }
 
+/// Interaction vertex
 #[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct Vertex {
     pub barcode: i32,
@@ -35,6 +36,7 @@ pub struct Vertex {
     pub particles_out: Vec<Particle>,
 }
 
+/// Particle
 #[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct Particle {
     pub id: i32,
@@ -47,6 +49,7 @@ pub struct Particle {
     pub end_vtx: i32,
 }
 
+/// Simple Lorentz vector with components (t, x, y, z)
 #[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct FourVector(pub [f64; 4]);
 
@@ -74,12 +77,20 @@ impl std::ops::IndexMut<usize> for FourVector {
     }
 }
 
+/// Cross section with error
 #[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct CrossSection {
     pub cross_section: f64,
     pub cross_section_error: f64,
 }
 
+impl std::fmt::Display for CrossSection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ± {}", self.cross_section, self.cross_section_error)
+    }
+}
+
+/// PDF information
 #[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct PdfInfo {
     pub parton_id: [i32; 2],

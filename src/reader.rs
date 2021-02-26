@@ -34,6 +34,7 @@ impl<T> Reader<T> {
 }
 
 impl<T: BufRead> Reader<T> {
+    /// Construct a new Reader
     pub fn new(stream: T) -> Self {
         stream.into()
     }
@@ -354,11 +355,15 @@ impl<T: BufRead> Iterator for Reader<T> {
     }
 }
 
+/// Error when parsing a line
 #[derive(Debug)]
 pub struct LineParseError {
-    err: ParseError,
-    line: String,
-    line_nr: usize,
+    /// The actual error
+    pub err: ParseError,
+    /// The line where the error occurred
+    pub line: String,
+    /// The line number where the error occurred
+    pub line_nr: usize,
 }
 
 #[derive(Debug)]
