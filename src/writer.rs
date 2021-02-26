@@ -31,7 +31,6 @@ impl<T: Write + Default> Writer<T> {
         self.finished = true;
         take(&mut self.stream)
     }
-
 }
 
 impl<T: Write> Writer<T> {
@@ -89,9 +88,9 @@ impl<T: Write> Writer<T> {
             "E {} {} {} {} {} {} {} {} 0 0 {}",
             event.number,
             event.mpi,
-            event.scale,
-            event.alpha_qcd,
-            event.alpha_qed,
+            ryu::Buffer::new().format(event.scale),
+            ryu::Buffer::new().format(event.alpha_qcd),
+            ryu::Buffer::new().format(event.alpha_qed),
             event.signal_process_id,
             event.signal_process_vertex,
             event.vertices.len(),
@@ -101,8 +100,9 @@ impl<T: Write> Writer<T> {
             write!(self.stream, " {}", state)?;
         }
         write!(self.stream, " {}", event.weights.len())?;
+        let mut buffer = ryu::Buffer::new();
         for weight in &event.weights {
-            write!(self.stream, " {}", weight)?;
+            write!(self.stream, " {}", buffer.format(*weight))?;
         }
         self.stream.write_all(b"\n")
     }
@@ -113,10 +113,10 @@ impl<T: Write> Writer<T> {
             "V {} {} {} {} {} {} 0 {} {}",
             vertex.barcode,
             vertex.status,
-            vertex.x,
-            vertex.y,
-            vertex.z,
-            vertex.t,
+            ryu::Buffer::new().format(vertex.x),
+            ryu::Buffer::new().format(vertex.y),
+            ryu::Buffer::new().format(vertex.z),
+            ryu::Buffer::new().format(vertex.t),
             vertex.particles_in.len() + vertex.particles_out.len(),
             vertex.weights.len()
         )?;
@@ -134,14 +134,14 @@ impl<T: Write> Writer<T> {
             self.stream,
             "P 0 {} {} {} {} {} {} {} {} {} {} {}",
             particle.id,
-            particle.p[1],
-            particle.p[2],
-            particle.p[3],
-            particle.p[0],
-            particle.m,
+            ryu::Buffer::new().format(particle.p[1]),
+            ryu::Buffer::new().format(particle.p[2]),
+            ryu::Buffer::new().format(particle.p[3]),
+            ryu::Buffer::new().format(particle.p[0]),
+            ryu::Buffer::new().format(particle.m),
             particle.status,
-            particle.theta,
-            particle.phi,
+            ryu::Buffer::new().format(particle.theta),
+            ryu::Buffer::new().format(particle.phi),
             particle.end_vtx,
             particle.flows.len()
         )?;
@@ -176,7 +176,8 @@ impl<T: Write> Writer<T> {
         writeln!(
             self.stream,
             "C {} {}",
-            xs.cross_section, xs.cross_section_error
+            ryu::Buffer::new().format(xs.cross_section),
+            ryu::Buffer::new().format(xs.cross_section_error)
         )
     }
 
@@ -186,11 +187,11 @@ impl<T: Write> Writer<T> {
             "F {} {} {} {} {} {} {} {} {}",
             pdf.parton_id[0],
             pdf.parton_id[1],
-            pdf.x[0],
-            pdf.x[1],
-            pdf.scale,
-            pdf.xf[0],
-            pdf.xf[1],
+            ryu::Buffer::new().format(pdf.x[0]),
+            ryu::Buffer::new().format(pdf.x[1]),
+            ryu::Buffer::new().format(pdf.scale),
+            ryu::Buffer::new().format(pdf.xf[0]),
+            ryu::Buffer::new().format(pdf.xf[1]),
             pdf.pdf_id[0],
             pdf.pdf_id[1],
         )
