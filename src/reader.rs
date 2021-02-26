@@ -116,6 +116,10 @@ fn ws_int(line: &str) -> IResult<&str, &str> {
     preceded(whitespace, int)(line)
 }
 
+fn ws_double(line: &str) -> IResult<&str, f64> {
+    preceded(whitespace, double)(line)
+}
+
 fn string(line: &str) -> IResult<&str, &str> {
     delimited(char('"'), take_until("\""), char('"'))(line)
 }
@@ -169,7 +173,7 @@ fn parse_event_line(line: &str) -> Result<Event, ParseError> {
     let nweights = parsed.parse()?;
     let mut weights = Vec::with_capacity(nweights);
     for _ in 0..nweights {
-        let (rem, weight) = preceded(whitespace, double)(rest)?;
+        let (rem, weight) = ws_double(rest)?;
         rest = rem;
         weights.push(weight);
     }
@@ -229,7 +233,7 @@ fn parse_vertex_line(line: &str, event: &mut Event) -> Result<(), ParseError> {
     let num_weights = num_weights.parse()?;
     let mut weights = Vec::with_capacity(num_weights);
     for _ in 0..num_weights {
-        let (rem, weight) = preceded(whitespace, double)(rest)?;
+        let (rem, weight) = ws_double(rest)?;
         rest = rem;
         weights.push(weight);
     }
