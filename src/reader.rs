@@ -112,6 +112,10 @@ fn int(line: &str) -> IResult<&str, &str> {
     int_parser(line)
 }
 
+fn ws_int(line: &str) -> IResult<&str, &str> {
+    preceded(whitespace, int)(line)
+}
+
 fn string(line: &str) -> IResult<&str, &str> {
     delimited(char('"'), take_until("\""), char('"'))(line)
 }
@@ -119,32 +123,23 @@ fn string(line: &str) -> IResult<&str, &str> {
 fn parse_event_line(line: &str) -> Result<Event, ParseError> {
     let (rest, parsed) = tuple((
         char('E'),
+        ws_int, // event number
+        ws_int, // mpi
         whitespace,
-        int,
-        whitespace, // event number
-        int,
-        whitespace, // mpi
         recognize_float,
         whitespace, //event scale
-        recognize_float,
-        whitespace, // alpha_qcd
-        recognize_float,
-        whitespace, // alpha_qed
-        int,
-        whitespace, // signal_process_id
-        int,
-        whitespace, // signal_process_vertex
-        int,
-        whitespace, // num_vertices
-        int,
-        whitespace, // beam1
-                    // have to stop here, tuple can't handle more entries
+        recognize_float,// alpha_qcd
+        whitespace,
+        recognize_float,// alpha_qed
+        ws_int, // signal_process_id
+        ws_int, // signal_process_vertex
+        ws_int, // num_vertices
+        ws_int, // beam1
+        // have to stop here, tuple can't handle more entries
     ))(line)?;
     let (
         _,
-        _,
         event_number,
-        _,
         mpi,
         _,
         event_scale,
@@ -152,21 +147,16 @@ fn parse_event_line(line: &str) -> Result<Event, ParseError> {
         alpha_qcd,
         _,
         alpha_qed,
-        _,
         signal_process_id,
-        _,
         signal_process_vertex,
-        _,
         num_vertices,
-        _,
         _beam1,
-        _,
     ) = parsed;
     let (mut rest, parsed) = tuple((
-        int, whitespace, // beam2
-        int,        // random states
+        ws_int, // beam2
+        ws_int, // random states
     ))(rest)?;
-    let (_beam2, _, nrandom_states) = parsed;
+    let (_beam2, nrandom_states) = parsed;
     let nrandom_states = nrandom_states.parse()?;
     let mut random_states = Vec::with_capacity(nrandom_states);
     for _ in 0..nrandom_states {
@@ -206,30 +196,23 @@ fn parse_event_line(line: &str) -> Result<Event, ParseError> {
 fn parse_vertex_line(line: &str, event: &mut Event) -> Result<(), ParseError> {
     let (mut rest, parsed) = tuple((
         char('V'),
+        ws_int,     // barcode
+        ws_int,     // status
         whitespace,
-        int,
-        whitespace, // barcode
-        int,
-        whitespace, // status
-        recognize_float,
-        whitespace, // x
-        recognize_float,
-        whitespace, // y
-        recognize_float,
-        whitespace, // z
-        recognize_float,
-        whitespace, // t
-        int,
-        whitespace, // num_orphans_in
-        int,
-        whitespace, // num_particles_out
-        int,        // num_weights
+        recognize_float, // x
+        whitespace,
+        recognize_float, // y
+        whitespace,
+        recognize_float, // z
+        whitespace,
+        recognize_float, // t
+        ws_int,        // num_orphans_in
+        ws_int,        // num_particles_out
+        ws_int,        // num_weights
     ))(line)?;
     let (
         _,
-        _,
         barcode,
-        _,
         status,
         _,
         x,
@@ -239,11 +222,8 @@ fn parse_vertex_line(line: &str, event: &mut Event) -> Result<(), ParseError> {
         z,
         _,
         t,
-        _,
         _num_orphans_in,
-        _,
         num_particles_out,
-        _,
         num_weights,
     ) = parsed;
     let num_weights = num_weights.parse()?;
@@ -274,35 +254,31 @@ fn parse_particle_line(
 ) -> Result<(), ParseError> {
     let (rest, parsed) = tuple((
         char('P'),
+        ws_int, // barcode
+        ws_int, // id
         whitespace,
-        int,
-        whitespace, // barcode
-        int,
-        whitespace, // id
-        recognize_float,
-        whitespace, // px
-        recognize_float,
-        whitespace, // py
-        recognize_float,
-        whitespace, // pz
-        recognize_float,
-        whitespace, // E
-        recognize_float,
-        whitespace, // m
+        recognize_float,// px
+        whitespace,
+        recognize_float,// py
+        whitespace,
+        recognize_float,// pz
+        whitespace,
+        recognize_float,// E
+        whitespace,
+        recognize_float,// m
+        whitespace,
     ))(line)?;
-    let (_, _, _barcode, _, id, _, px, _, py, _, pz, _, e, _, m, _) = parsed;
+    let (_, _barcode, id, _, px, _, py, _, pz, _, e, _, m, _) = parsed;
     let (mut rest, parsed) = tuple((
-        int,
-        whitespace, // status
-        recognize_float,
-        whitespace, // theta
-        recognize_float,
-        whitespace, // phi
-        int,
-        whitespace, // end_vtx_code
-        int,        // flowsize
+        int,// status
+        whitespace,
+        recognize_float,// theta
+        whitespace,
+        recognize_float,// phi
+        ws_int, // end_vtx_code
+        ws_int        // flowsize
     ))(rest)?;
-    let (status, _, theta, _, phi, _, end_vtx_code, _, flowsize) = parsed;
+    let (status, _, theta, _, phi, end_vtx_code, flowsize) = parsed;
     let mut flows = BTreeMap::new();
     for _ in 0..flowsize.parse()? {
         let (rem, flowidx) = preceded(whitespace, int)(rest)?;
@@ -355,30 +331,26 @@ fn parse_pdf_info_line(
 ) -> Result<(), ParseError> {
     let (_rest, parsed) = tuple((
         char('F'),
+        ws_int, // id0
+        ws_int, // id1
         whitespace,
-        int,
-        whitespace, // id0
-        int,
-        whitespace, // id1
-        recognize_float,
-        whitespace, // x0
-        recognize_float,
-        whitespace, // x1
-        recognize_float,
-        whitespace, // scale
-        recognize_float,
-        whitespace, // xf0
-        recognize_float,
-        whitespace, // xf1
-        opt(int),
-        whitespace, // pdf_id0
+        recognize_float,// x0
+        whitespace,
+        recognize_float,// x1
+        whitespace,
+        recognize_float,// scale
+        whitespace,
+        recognize_float,// xf0
+        whitespace,
+        recognize_float,// xf1
+        whitespace,
+        opt(int),// pdf_id0
+        whitespace,
         opt(int),   // pdf_id1
     ))(line)?;
     let (
         _,
-        _,
         id0,
-        _,
         id1,
         _,
         x0,
