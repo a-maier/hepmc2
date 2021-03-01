@@ -82,7 +82,13 @@ impl<T: BufRead> Reader<T> {
                 },
                 Some(b'N') => parse_weight_names_line(&self.line, &mut event)?,
                 Some(b'C') => parse_xs_info_line(&self.line, &mut event)?,
-                _ => return Err(ParseError::BadPrefix),
+                _ => {
+                    if self.line.trim().is_empty() {
+                        continue
+                    } else {
+                        return Err(ParseError::BadPrefix)
+                    }
+                },
             };
         }
         Ok(event)
