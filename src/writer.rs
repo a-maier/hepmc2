@@ -119,11 +119,11 @@ impl<T: Write> Writer<T> {
     /// # }
     /// ```
     pub fn write(&mut self, event: &Event) -> Result<(), io::Error> {
-        self.write_event_line(&event)?;
+        self.write_event_line(event)?;
         if !event.weight_names.is_empty() {
             self.write_weight_names_line(&event.weight_names)?;
         }
-        self.write_unit_line(&event)?;
+        self.write_unit_line(event)?;
         self.write_cross_section_line(&event.xs)?;
         self.write_pdf_info_line(&event.pdf_info)?;
         for vertex in &event.vertices {

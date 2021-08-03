@@ -296,7 +296,7 @@ fn parse_pdf_info_line(
     let pdf_info = PdfInfo {
         parton_id: [id0.parse()?, id1.parse()?],
         x: [x0, x1],
-        scale: scale,
+        scale,
         xf: [xf0, xf1],
         pdf_id: [
             pdf_id0.map(|id| id.parse()).transpose()?.unwrap_or(0),
