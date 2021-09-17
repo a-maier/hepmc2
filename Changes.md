@@ -1,10 +1,16 @@
+# Version 0.5.0
+
+- Re-export the most common structs at crate level.
+- Support heavy ion event information
+- Add proper types for energy and length units
+
 # Version 0.4.1
 
 - Accept (and ignore) empty lines in input
 
 # Version 0.4.0
 
-- Performance tweaks
+- Tweak performance
 
 # Version 0.3.0
 
