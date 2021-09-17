@@ -4,7 +4,7 @@
 //! # Caveats
 //!
 //! This crate is inspired by the code for the `ReaderAsciiHepMC2` in the
-//! [HepMC3 library](https://gitlab.cern.ch/hepmc/HepMC), version
+//! [HepMC3 library](https://gitlab.cern.ch/hepmc/HepMC3), version
 //! 3.2.0. When using the current version, be aware of
 //!
 //! - Lack of rigorous tests
