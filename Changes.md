@@ -1,3 +1,15 @@
+# Version 0.4.1
+
+- Accept (and ignore) empty lines in input
+
+# Version 0.4.0
+
+- Performance tweaks
+
+# Version 0.3.0
+
+- Try to ensure that the `HepMC` footer is written
+
 # Version 0.2.1
 
 - Skip lines starting with `HepMC`
