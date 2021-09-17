@@ -21,8 +21,8 @@ impl Distribution<Event> for Standard {
         Event(hepmc2::event::Event {
             alpha_qcd: rng.gen_range(0.1..0.12),
             alpha_qed: 1./137.,
-            energy_unit: "GeV".to_string(),
-            length_unit: "mm".to_string(),
+            energy_unit: Default::default(),
+            length_unit: Default::default(),
             mpi: rng.gen(),
             number: rng.gen(),
             pdf_info: rng.gen::<PdfInfo>().into(),

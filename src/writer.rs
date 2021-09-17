@@ -237,10 +237,7 @@ impl<T: Write> Writer<T> {
     }
 
     fn write_unit_line(&mut self, event: &Event) -> Result<(), io::Error> {
-        if event.energy_unit.is_empty() || event.length_unit.is_empty() {
-            return Ok(());
-        }
-        writeln!(self.stream, "U {} {}", event.energy_unit, event.length_unit)
+        writeln!(self.stream, "U {:?} {:?}", event.energy_unit, event.length_unit)
     }
 
     fn write_cross_section_line(

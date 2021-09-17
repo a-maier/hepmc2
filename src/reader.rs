@@ -269,8 +269,8 @@ fn parse_units_line(line: &str, event: &mut Event) -> Result<(), ParseError> {
 
     let (rest, energy) = ws_nonws(rest)?;
     let (_rest, length) = ws_nonws(rest)?;
-    event.energy_unit = energy.to_owned();
-    event.length_unit = length.to_owned();
+    event.energy_unit = energy.parse()?;
+    event.length_unit = length.parse()?;
     Ok(())
 }
 
@@ -411,6 +411,7 @@ pub enum ParseError {
     Parse(String),
     ConvertInt(ParseIntError),
     ConvertFloat(ParseFloatError),
+    StrumErr(strum::ParseError),
     BadPrefix,
     NoVertex,
 }
@@ -430,6 +431,12 @@ impl From<ParseIntError> for ParseError {
 impl From<ParseFloatError> for ParseError {
     fn from(err: ParseFloatError) -> Self {
         ParseError::ConvertFloat(err)
+    }
+}
+
+impl From<strum::ParseError> for ParseError {
+    fn from(err: strum::ParseError) -> Self {
+        ParseError::StrumErr(err)
     }
 }
 
@@ -454,6 +461,9 @@ impl Display for ParseError {
             ParseError::ConvertFloat(err) => {
                 write!(f, "Float conversion error: {}", err)
             }
+            ParseError::StrumErr(err) => {
+                write!(f, "{}", err)
+            },
             ParseError::BadPrefix => write!(f, "Unrecognized prefix"),
             ParseError::NoVertex => {
                 write!(f, "Tried to add particle without vertex")

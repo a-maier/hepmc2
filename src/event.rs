@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Serialize, Deserialize};
+use strum::EnumString;
 
 /// Scattering event
 #[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
@@ -18,8 +19,8 @@ pub struct Event {
     pub vertices: Vec<Vertex>,
     pub xs: CrossSection,
     pub pdf_info: PdfInfo,
-    pub energy_unit: String,
-    pub length_unit: String,
+    pub energy_unit: EnergyUnit,
+    pub length_unit: LengthUnit,
     pub heavy_ion_info: Option<HeavyIonInfo>,
 }
 
@@ -117,4 +118,30 @@ pub struct HeavyIonInfo {
     pub event_plane_angle: f64,
     pub eccentricity: f64,
     pub sigma_inel_nn: f64,
+}
+
+/// Energy units
+#[derive(EnumString, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Clone, Serialize, Deserialize)]
+pub enum EnergyUnit {
+    MEV,
+    GEV
+}
+
+impl std::default::Default for EnergyUnit {
+    fn default() -> Self {
+        Self::GEV
+    }
+}
+
+/// Length units
+#[derive(EnumString, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Clone, Serialize, Deserialize)]
+pub enum LengthUnit {
+    MM,
+    CM
+}
+
+impl std::default::Default for LengthUnit {
+    fn default() -> Self {
+        Self::CM
+    }
 }

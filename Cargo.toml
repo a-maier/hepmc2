@@ -15,6 +15,7 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 nom = "6"
 ryu = "1.0"
+strum = { version = "0.21", features = ["derive"] }
 
 [dev-dependencies]
 criterion = "0.3"
