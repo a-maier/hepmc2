@@ -4,10 +4,7 @@ use std::f64::consts::PI;
 use std::io::BufReader;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use hepmc2::{
-    reader::Reader,
-    writer::Writer,
-};
+use hepmc2::{Reader, Writer};
 use rand::{Rng, SeedableRng};
 use rand::distributions::{Alphanumeric, Distribution, Standard};
 

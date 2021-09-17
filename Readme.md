@@ -16,8 +16,7 @@ This crate is inspired by the code for the `ReaderAsciiHepMC2` in the
 
 ```rust
 // Read events from `events_in.hepmc2` and write them to `events_out.hepmc2`
-use hepmc2::reader::Reader;
-use hepmc2::writer::Writer;
+use hepmc2::{Reader, Writer};
 
 use std::io::BufReader;
 use std::fs::File;
