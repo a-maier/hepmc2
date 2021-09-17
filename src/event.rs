@@ -20,6 +20,7 @@ pub struct Event {
     pub pdf_info: PdfInfo,
     pub energy_unit: String,
     pub length_unit: String,
+    pub heavy_ion_info: Option<HeavyIonInfo>,
 }
 
 /// Interaction vertex
@@ -98,4 +99,22 @@ pub struct PdfInfo {
     pub scale: f64,
     pub xf: [f64; 2],
     pub pdf_id: [i32; 2],
+}
+
+/// Information for heavy ion collisions
+#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
+pub struct HeavyIonInfo {
+    pub ncoll_hard: i32,
+    pub npart_proj: i32,
+    pub npart_targ: i32,
+    pub ncoll: i32,
+    pub spectator_neutrons: i32,
+    pub spectator_protons: i32,
+    pub n_nwounded_collisions: i32,
+    pub nwounded_n_collisions: i32,
+    pub nwounded_nwounded_collisions: i32,
+    pub impact_parameter: f64,
+    pub event_plane_angle: f64,
+    pub eccentricity: f64,
+    pub sigma_inel_nn: f64,
 }

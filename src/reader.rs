@@ -182,6 +182,7 @@ fn parse_event_line(line: &str) -> Result<Event, ParseError> {
         energy_unit: Default::default(),
         length_unit: Default::default(),
         pdf_info: Default::default(),
+        heavy_ion_info: None,
     };
     Ok(event)
 }
@@ -308,11 +309,43 @@ fn parse_pdf_info_line(
 }
 
 fn parse_heavy_ion_line(
-    _line: &str,
-    _event: &mut Event,
+    line: &str,
+    event: &mut Event,
 ) -> Result<(), ParseError> {
-    unimplemented!()
+    let rest = &line[1..];
+
+    let (rest, ncoll_hard) = ws_int(rest)?;
+    let (rest, npart_proj) = ws_int(rest)?;
+    let (rest, npart_targ) = ws_int(rest)?;
+    let (rest, ncoll) = ws_int(rest)?;
+    let (rest, spectator_neutrons) = ws_int(rest)?;
+    let (rest, spectator_protons) = ws_int(rest)?;
+    let (rest, n_nwounded_collisions) = ws_int(rest)?;
+    let (rest, nwounded_n_collisions) = ws_int(rest)?;
+    let (rest, nwounded_nwounded_collisions) = ws_int(rest)?;
+    let (rest, impact_parameter) = ws_double(rest)?;
+    let (rest, event_plane_angle) = ws_double(rest)?;
+    let (rest, eccentricity) = ws_double(rest)?;
+    let (_rest, sigma_inel_nn) = ws_double(rest)?;
+    event.heavy_ion_info = Some(HeavyIonInfo{
+        ncoll_hard: ncoll_hard.parse()?,
+        npart_proj: npart_proj.parse()?,
+        npart_targ: npart_targ.parse()?,
+        ncoll: ncoll.parse()?,
+        spectator_neutrons: spectator_neutrons.parse()?,
+        spectator_protons: spectator_protons.parse()?,
+        n_nwounded_collisions: n_nwounded_collisions.parse()?,
+        nwounded_n_collisions: nwounded_n_collisions.parse()?,
+        nwounded_nwounded_collisions: nwounded_nwounded_collisions.parse()?,
+        impact_parameter,
+        event_plane_angle,
+        eccentricity,
+        sigma_inel_nn,
+    });
+    Ok(())
 }
+
+
 
 fn parse_weight_names_line(
     line: &str,

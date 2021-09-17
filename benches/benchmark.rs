@@ -45,7 +45,8 @@ impl Distribution<Event> for Standard {
                 let len = rng.gen_range(0..11);
                 (0..len).map(|_| rng.gen()).collect()
             },
-            xs: rng.gen::<CrossSection>().into()
+            xs: rng.gen::<CrossSection>().into(),
+            heavy_ion_info: None,
         })
     }
 }

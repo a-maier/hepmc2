@@ -126,6 +126,9 @@ impl<T: Write> Writer<T> {
         self.write_unit_line(event)?;
         self.write_cross_section_line(&event.xs)?;
         self.write_pdf_info_line(&event.pdf_info)?;
+        if let Some(hi) = event.heavy_ion_info {
+            self.write_heavy_ion_info_line(&hi)?;
+        }
         for vertex in &event.vertices {
             self.write_vertex_line(vertex)?;
             let particles = vertex
@@ -265,6 +268,26 @@ impl<T: Write> Writer<T> {
             ryu::Buffer::new().format(pdf.xf[1]),
             pdf.pdf_id[0],
             pdf.pdf_id[1],
+        )
+    }
+
+    fn write_heavy_ion_info_line(&mut self, hi: &HeavyIonInfo) -> Result<(), io::Error> {
+        writeln!(
+            self.stream,
+            "H {} {} {} {} {} {} {} {} {} {} {} {} {}",
+            hi.ncoll_hard,
+            hi.npart_proj,
+            hi.npart_targ,
+            hi.ncoll,
+            hi.spectator_neutrons,
+            hi.spectator_protons,
+            hi.n_nwounded_collisions,
+            hi.nwounded_n_collisions,
+            hi.nwounded_nwounded_collisions,
+            ryu::Buffer::new().format(hi.impact_parameter),
+            ryu::Buffer::new().format(hi.event_plane_angle),
+            ryu::Buffer::new().format(hi.eccentricity),
+            ryu::Buffer::new().format(hi.sigma_inel_nn),
         )
     }
 }
