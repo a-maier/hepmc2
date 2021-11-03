@@ -294,7 +294,9 @@ impl<T: Write> Drop for Writer<T> {
         if !self.finished {
             error!("Hepmc2 writer dropped before finished.");
             error!("Call finish() manually to fix this error.");
-            self.ref_finish().unwrap()
+            if let Err(err) = self.ref_finish() {
+                error!("Error writing footer: {}", err);
+            }
         }
     }
 }
