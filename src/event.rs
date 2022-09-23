@@ -61,7 +61,7 @@ impl FourVector {
     }
 
     pub fn txyz(t: f64, x: f64, y: f64, z: f64) -> Self {
-        FourVector { 0: [t, x, y, z] }
+        FourVector ( [t, x, y, z] )
     }
 }
 
