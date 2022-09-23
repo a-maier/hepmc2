@@ -5,8 +5,8 @@ use std::io::BufReader;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use hepmc2::{Reader, Writer};
-use rand::{Rng, SeedableRng};
 use rand::distributions::{Alphanumeric, Distribution, Standard};
+use rand::{Rng, SeedableRng};
 
 struct Event(hepmc2::event::Event);
 
@@ -20,7 +20,7 @@ impl Distribution<Event> for Standard {
     fn sample<R: Rng + ?Sized>(&self, mut rng: &mut R) -> Event {
         Event(hepmc2::event::Event {
             alpha_qcd: rng.gen_range(0.1..0.12),
-            alpha_qed: 1./137.,
+            alpha_qed: 1. / 137.,
             energy_unit: Default::default(),
             length_unit: Default::default(),
             mpi: rng.gen(),
@@ -53,7 +53,7 @@ impl Distribution<Event> for Standard {
 
 struct PdfInfo(hepmc2::event::PdfInfo);
 
-impl From<PdfInfo> for hepmc2::event::PdfInfo{
+impl From<PdfInfo> for hepmc2::event::PdfInfo {
     fn from(p: PdfInfo) -> Self {
         p.0
     }
@@ -73,7 +73,7 @@ impl Distribution<PdfInfo> for Standard {
 
 struct Vertex(hepmc2::event::Vertex);
 
-impl From<Vertex> for hepmc2::event::Vertex{
+impl From<Vertex> for hepmc2::event::Vertex {
     fn from(v: Vertex) -> Self {
         v.0
     }
@@ -81,7 +81,7 @@ impl From<Vertex> for hepmc2::event::Vertex{
 
 impl Distribution<Vertex> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Vertex {
-        Vertex(hepmc2::event::Vertex{
+        Vertex(hepmc2::event::Vertex {
             barcode: 0,
             particles_in: {
                 let len = rng.gen_range(0..=2);
@@ -106,7 +106,7 @@ impl Distribution<Vertex> for Standard {
 
 struct Particle(hepmc2::event::Particle);
 
-impl From<Particle> for hepmc2::event::Particle{
+impl From<Particle> for hepmc2::event::Particle {
     fn from(v: Particle) -> Self {
         v.0
     }
@@ -114,7 +114,7 @@ impl From<Particle> for hepmc2::event::Particle{
 
 impl Distribution<Particle> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Particle {
-        Particle(hepmc2::event::Particle{
+        Particle(hepmc2::event::Particle {
             end_vtx: 0,
             flows: Default::default(),
             id: rng.gen_range(-30..30),
@@ -129,7 +129,7 @@ impl Distribution<Particle> for Standard {
 
 struct FourVector(hepmc2::event::FourVector);
 
-impl From<FourVector> for hepmc2::event::FourVector{
+impl From<FourVector> for hepmc2::event::FourVector {
     fn from(v: FourVector) -> Self {
         v.0
     }
@@ -137,15 +137,13 @@ impl From<FourVector> for hepmc2::event::FourVector{
 
 impl Distribution<FourVector> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> FourVector {
-        FourVector(hepmc2::event::FourVector(
-            rng.gen()
-        ))
+        FourVector(hepmc2::event::FourVector(rng.gen()))
     }
 }
 
 struct CrossSection(hepmc2::event::CrossSection);
 
-impl From<CrossSection> for hepmc2::event::CrossSection{
+impl From<CrossSection> for hepmc2::event::CrossSection {
     fn from(xs: CrossSection) -> Self {
         xs.0
     }
@@ -153,7 +151,7 @@ impl From<CrossSection> for hepmc2::event::CrossSection{
 
 impl Distribution<CrossSection> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> CrossSection {
-        CrossSection(hepmc2::event::CrossSection{
+        CrossSection(hepmc2::event::CrossSection {
             cross_section: rng.gen(),
             cross_section_error: rng.gen(),
         })
@@ -162,7 +160,10 @@ impl Distribution<CrossSection> for Standard {
 
 fn gen_random_name<R: Rng>(rng: &mut R) -> String {
     let len = rng.gen_range(0..6);
-    rng.sample_iter(&Alphanumeric).take(len).map(char::from).collect()
+    rng.sample_iter(&Alphanumeric)
+        .take(len)
+        .map(char::from)
+        .collect()
 }
 
 const NEVENTS: usize = 3_000;
@@ -173,35 +174,29 @@ fn criterion_benchmark(c: &mut Criterion) {
     {
         let mut rng = rand_xoshiro::Xoshiro256StarStar::seed_from_u64(0);
         let events: Vec<Event> = (0..NEVENTS).map(|_| rng.gen()).collect();
-        c.bench_function(
-            "write",
-            |b| b.iter(
-                || {
-                    buf.clear();
-                    let mut writer = Writer::new(&mut buf).unwrap();
-                    for event in &events {
-                        writer.write(event.as_ref()).unwrap()
-                    }
-                    writer.finish().unwrap()
+        c.bench_function("write", |b| {
+            b.iter(|| {
+                buf.clear();
+                let mut writer = Writer::new(&mut buf).unwrap();
+                for event in &events {
+                    writer.write(event.as_ref()).unwrap()
                 }
-            )
-        );
+                writer.finish().unwrap()
+            })
+        });
     }
 
-    c.bench_function(
-        "read",
-        |b| b.iter(
-            || {
-                let mut count = 0;
-                let buf = BufReader::new(buf.as_slice());
-                let reader = Reader::new(buf);
-                for _event in reader {
-                    count += 1
-                }
-                assert_eq!(count, NEVENTS)
+    c.bench_function("read", |b| {
+        b.iter(|| {
+            let mut count = 0;
+            let buf = BufReader::new(buf.as_slice());
+            let reader = Reader::new(buf);
+            for _event in reader {
+                count += 1
             }
-        )
-    );
+            assert_eq!(count, NEVENTS)
+        })
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

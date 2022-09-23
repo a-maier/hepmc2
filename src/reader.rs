@@ -77,18 +77,20 @@ impl<T: BufRead> Reader<T> {
                 Some(b'U') => parse_units_line(&self.line, &mut event)?,
                 Some(b'F') => parse_pdf_info_line(&self.line, &mut event)?,
                 Some(b'H') => {
-                    if self.line.starts_with("HepMC") { continue; }
+                    if self.line.starts_with("HepMC") {
+                        continue;
+                    }
                     parse_heavy_ion_line(&self.line, &mut event)?
-                },
+                }
                 Some(b'N') => parse_weight_names_line(&self.line, &mut event)?,
                 Some(b'C') => parse_xs_info_line(&self.line, &mut event)?,
                 _ => {
                     if self.line.trim().is_empty() {
-                        continue
+                        continue;
                     } else {
-                        return Err(ParseError::BadPrefix)
+                        return Err(ParseError::BadPrefix);
                     }
-                },
+                }
             };
         }
         Ok(event)
@@ -208,7 +210,10 @@ fn parse_vertex_line(line: &str, event: &mut Event) -> Result<(), ParseError> {
     let vertex = Vertex {
         barcode: barcode.parse()?,
         status: status.parse()?,
-        x, y, z, t,
+        x,
+        y,
+        z,
+        t,
         weights,
         particles_in: Vec::new(),
         particles_out: Vec::with_capacity(num_particles_out.parse()?),
@@ -245,9 +250,11 @@ fn parse_particle_line(
     }
     let particle = Particle {
         id: id.parse()?,
-        p: FourVector::txyz(e, px, py, pz), m,
+        p: FourVector::txyz(e, px, py, pz),
+        m,
         status: status.parse()?,
-        theta, phi,
+        theta,
+        phi,
         flows,
         end_vtx: end_vtx_code.parse()?,
     };
@@ -289,9 +296,9 @@ fn parse_pdf_info_line(
     let (rest, xf1) = ws_double(rest)?;
     let (_rest, parsed) = tuple((
         whitespace,
-        opt(int),// pdf_id0
+        opt(int), // pdf_id0
         whitespace,
-        opt(int),   // pdf_id1
+        opt(int), // pdf_id1
     ))(rest)?;
     let (_, pdf_id0, _, pdf_id1) = parsed;
     let pdf_info = PdfInfo {
@@ -327,7 +334,7 @@ fn parse_heavy_ion_line(
     let (rest, event_plane_angle) = ws_double(rest)?;
     let (rest, eccentricity) = ws_double(rest)?;
     let (_rest, sigma_inel_nn) = ws_double(rest)?;
-    event.heavy_ion_info = Some(HeavyIonInfo{
+    event.heavy_ion_info = Some(HeavyIonInfo {
         ncoll_hard: ncoll_hard.parse()?,
         npart_proj: npart_proj.parse()?,
         npart_targ: npart_targ.parse()?,
@@ -345,14 +352,12 @@ fn parse_heavy_ion_line(
     Ok(())
 }
 
-
-
 fn parse_weight_names_line(
     line: &str,
     event: &mut Event,
 ) -> Result<(), ParseError> {
     let rest = &line[1..];
-    let (mut rest,  nnames) = ws_int(rest)?;
+    let (mut rest, nnames) = ws_int(rest)?;
     let nnames = nnames.parse()?;
     let mut weight_names = Vec::with_capacity(nnames);
     for _ in 0..nnames {
@@ -371,7 +376,7 @@ fn parse_xs_info_line(line: &str, event: &mut Event) -> Result<(), ParseError> {
     let (_rest, cross_section_error) = ws_double(rest)?;
     event.xs = CrossSection {
         cross_section,
-        cross_section_error
+        cross_section_error,
     };
     Ok(())
 }
@@ -463,7 +468,7 @@ impl Display for ParseError {
             }
             ParseError::StrumErr(err) => {
                 write!(f, "{}", err)
-            },
+            }
             ParseError::BadPrefix => write!(f, "Unrecognized prefix"),
             ParseError::NoVertex => {
                 write!(f, "Tried to add particle without vertex")

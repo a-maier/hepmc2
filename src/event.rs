@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use strum::EnumString;
 
 /// Scattering event
@@ -52,7 +52,9 @@ pub struct Particle {
 }
 
 /// Simple Lorentz vector with components (t, x, y, z)
-#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
+#[derive(
+    Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize,
+)]
 pub struct FourVector(pub [f64; 4]);
 
 impl FourVector {
@@ -61,7 +63,7 @@ impl FourVector {
     }
 
     pub fn txyz(t: f64, x: f64, y: f64, z: f64) -> Self {
-        FourVector ( [t, x, y, z] )
+        FourVector([t, x, y, z])
     }
 }
 
@@ -80,7 +82,9 @@ impl std::ops::IndexMut<usize> for FourVector {
 }
 
 /// Cross section with error
-#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
+#[derive(
+    Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize,
+)]
 pub struct CrossSection {
     pub cross_section: f64,
     pub cross_section_error: f64,
@@ -93,7 +97,9 @@ impl std::fmt::Display for CrossSection {
 }
 
 /// PDF information
-#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
+#[derive(
+    Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize,
+)]
 pub struct PdfInfo {
     pub parton_id: [i32; 2],
     pub x: [f64; 2],
@@ -103,7 +109,9 @@ pub struct PdfInfo {
 }
 
 /// Information for heavy ion collisions
-#[derive(Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize)]
+#[derive(
+    Debug, PartialEq, PartialOrd, Default, Copy, Clone, Serialize, Deserialize,
+)]
 pub struct HeavyIonInfo {
     pub ncoll_hard: i32,
     pub npart_proj: i32,
@@ -121,10 +129,22 @@ pub struct HeavyIonInfo {
 }
 
 /// Energy units
-#[derive(EnumString, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Clone, Serialize, Deserialize)]
+#[derive(
+    EnumString,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Copy,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
 pub enum EnergyUnit {
     MEV,
-    GEV
+    GEV,
 }
 
 impl std::default::Default for EnergyUnit {
@@ -134,10 +154,22 @@ impl std::default::Default for EnergyUnit {
 }
 
 /// Length units
-#[derive(EnumString, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Clone, Serialize, Deserialize)]
+#[derive(
+    EnumString,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Copy,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
 pub enum LengthUnit {
     MM,
-    CM
+    CM,
 }
 
 impl std::default::Default for LengthUnit {

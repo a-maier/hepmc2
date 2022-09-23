@@ -37,9 +37,9 @@ pub mod event;
 pub mod reader;
 pub mod writer;
 
-pub use crate::writer::Writer as Writer;
-pub use crate::reader::Reader as Reader;
-pub use crate::event::Event as Event;
+pub use crate::event::Event;
+pub use crate::reader::Reader;
+pub use crate::writer::Writer;
 
 #[cfg(test)]
 mod tests {

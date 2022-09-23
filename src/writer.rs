@@ -74,7 +74,10 @@ impl<T: Write> Writer<T> {
         stream: T,
         header: U,
     ) -> Result<Self, io::Error> {
-        let mut writer = Self { stream, finished: false };
+        let mut writer = Self {
+            stream,
+            finished: false,
+        };
         writer.write_header(header)?;
         Ok(writer)
     }
@@ -237,7 +240,11 @@ impl<T: Write> Writer<T> {
     }
 
     fn write_unit_line(&mut self, event: &Event) -> Result<(), io::Error> {
-        writeln!(self.stream, "U {:?} {:?}", event.energy_unit, event.length_unit)
+        writeln!(
+            self.stream,
+            "U {:?} {:?}",
+            event.energy_unit, event.length_unit
+        )
     }
 
     fn write_cross_section_line(
@@ -268,7 +275,10 @@ impl<T: Write> Writer<T> {
         )
     }
 
-    fn write_heavy_ion_info_line(&mut self, hi: &HeavyIonInfo) -> Result<(), io::Error> {
+    fn write_heavy_ion_info_line(
+        &mut self,
+        hi: &HeavyIonInfo,
+    ) -> Result<(), io::Error> {
         writeln!(
             self.stream,
             "H {} {} {} {} {} {} {} {} {} {} {} {} {}",
