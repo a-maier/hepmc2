@@ -1,4 +1,10 @@
-# Version 0.5.0
+# Version 0.6.0
+
+- Update to rust 2021.
+- Better error structure using `thiserror`.
+- Use `nom`'s integer parsers
+
+# Version 0.5.1
 
 - Don't panic if `finish` fails while dropping a `Writer`.
 
