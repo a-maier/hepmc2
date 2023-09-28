@@ -15,6 +15,7 @@ use nom::{
     sequence::{delimited, preceded, tuple},
     IResult,
 };
+use thiserror::Error;
 
 const BUF_SIZE: usize = 256;
 
@@ -406,39 +407,22 @@ pub struct LineParseError {
     pub line_nr: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ParseError {
-    Io(io::Error),
+    #[error("I/O error")]
+    Io(#[from] io::Error),
+    #[error("Parsing error: {0}")]
     Parse(String),
-    ConvertInt(TryFromIntError),
-    ConvertFloat(ParseFloatError),
-    StrumErr(strum::ParseError),
+    #[error("Integer conversion error")]
+    ConvertInt(#[from] TryFromIntError),
+    #[error("Float conversion error")]
+    ConvertFloat(#[from] ParseFloatError),
+    #[error("Enum parsing error")]
+    StrumErr(#[from] strum::ParseError),
+    #[error("Unrecognized prefix")]
     BadPrefix,
+    #[error("Tried to add particle without vertex")]
     NoVertex,
-}
-
-impl From<io::Error> for ParseError {
-    fn from(err: io::Error) -> Self {
-        ParseError::Io(err)
-    }
-}
-
-impl From<TryFromIntError> for ParseError {
-    fn from(err: TryFromIntError) -> Self {
-        ParseError::ConvertInt(err)
-    }
-}
-
-impl From<ParseFloatError> for ParseError {
-    fn from(err: ParseFloatError) -> Self {
-        ParseError::ConvertFloat(err)
-    }
-}
-
-impl From<strum::ParseError> for ParseError {
-    fn from(err: strum::ParseError) -> Self {
-        ParseError::StrumErr(err)
-    }
 }
 
 impl<T: Display> From<nom::Err<T>> for ParseError {
@@ -451,32 +435,14 @@ impl<T: Display> From<nom::Err<T>> for ParseError {
     }
 }
 
-impl Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::Io(err) => write!(f, "I/O error: {}", err),
-            ParseError::Parse(err) => write!(f, "Parsing error: {}", err),
-            ParseError::ConvertInt(err) => {
-                write!(f, "Integer conversion error: {}", err)
-            }
-            ParseError::ConvertFloat(err) => {
-                write!(f, "Float conversion error: {}", err)
-            }
-            ParseError::StrumErr(err) => {
-                write!(f, "{}", err)
-            }
-            ParseError::BadPrefix => write!(f, "Unrecognized prefix"),
-            ParseError::NoVertex => {
-                write!(f, "Tried to add particle without vertex")
-            }
-        }
-    }
-}
-
 impl Display for LineParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}\n in line {}:\n{}", self.err, self.line_nr, self.line)
     }
 }
 
-impl std::error::Error for LineParseError {}
+impl std::error::Error for LineParseError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&(self.err))
+    }
+}
