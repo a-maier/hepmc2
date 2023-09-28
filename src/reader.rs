@@ -3,14 +3,14 @@ use std::default::Default;
 use std::fmt::{self, Display};
 use std::io::{self, BufRead};
 use std::iter::Iterator;
-use std::num::{ParseFloatError, ParseIntError};
+use std::num::{ParseFloatError, TryFromIntError};
 
 use crate::event::*;
 
 use nom::{
     bytes::complete::{take_until, take_while1},
-    character::complete::{char, space1},
-    combinator::{opt, recognize},
+    character::complete::{char, space1, i32, u64},
+    combinator::opt,
     number::complete::double,
     sequence::{delimited, preceded, tuple},
     IResult,
@@ -113,20 +113,16 @@ fn non_whitespace(line: &str) -> IResult<&str, &str> {
     take_while1(|c: char| !c.is_ascii_whitespace())(line)
 }
 
-fn int(line: &str) -> IResult<&str, &str> {
-    let mut int_parser = recognize(tuple((
-        opt(char('-')),
-        take_while1(|c: char| c.is_ascii_digit()),
-    )));
-    int_parser(line)
-}
-
 fn ws_nonws(line: &str) -> IResult<&str, &str> {
     preceded(whitespace, non_whitespace)(line)
 }
 
-fn ws_int(line: &str) -> IResult<&str, &str> {
-    preceded(whitespace, int)(line)
+fn ws_i32(line: &str) -> IResult<&str, i32> {
+    preceded(whitespace, i32)(line)
+}
+
+fn ws_u64(line: &str) -> IResult<&str, u64> {
+    preceded(whitespace, u64)(line)
 }
 
 fn ws_double(line: &str) -> IResult<&str, f64> {
@@ -140,28 +136,29 @@ fn string(line: &str) -> IResult<&str, &str> {
 fn parse_event_line(line: &str) -> Result<Event, ParseError> {
     let rest = &line[1..];
 
-    let (rest, event_number) = ws_int(rest)?;
-    let (rest, mpi) = ws_int(rest)?;
+    let (rest, event_number) = ws_i32(rest)?;
+    let (rest, mpi) = ws_i32(rest)?;
     let (rest, event_scale) = ws_double(rest)?;
     let (rest, alpha_qcd) = ws_double(rest)?;
     let (rest, alpha_qed) = ws_double(rest)?;
-    let (rest, signal_process_id) = ws_int(rest)?;
-    let (rest, signal_process_vertex) = ws_int(rest)?;
-    let (rest, num_vertices) = ws_int(rest)?;
+    let (rest, signal_process_id) = ws_i32(rest)?;
+    let (rest, signal_process_vertex) = ws_i32(rest)?;
+    let (rest, num_vertices) = ws_u64(rest)?;
+    let num_vertices = num_vertices.try_into()?;
     let (rest, _beam1) = ws_nonws(rest)?;
     let (rest, _beam2) = ws_nonws(rest)?;
-    let (mut rest, nrandom_states) = ws_int(rest)?;
+    let (mut rest, nrandom_states) = ws_u64(rest)?;
 
-    let nrandom_states = nrandom_states.parse()?;
+    let nrandom_states = nrandom_states.try_into()?;
     let mut random_states = Vec::with_capacity(nrandom_states);
     for _ in 0..nrandom_states {
-        let (rem, random_state) = ws_int(rest)?;
+        let (rem, random_state) = ws_i32(rest)?;
         rest = rem;
-        let random_state = random_state.parse()?;
+        let random_state = random_state;
         random_states.push(random_state);
     }
-    let (mut rest, parsed) = preceded(whitespace, int)(rest)?;
-    let nweights = parsed.parse()?;
+    let (mut rest, nweights) = ws_u64(rest)?;
+    let nweights = nweights.try_into()?;
     let mut weights = Vec::with_capacity(nweights);
     for _ in 0..nweights {
         let (rem, weight) = ws_double(rest)?;
@@ -169,16 +166,16 @@ fn parse_event_line(line: &str) -> Result<Event, ParseError> {
         weights.push(weight);
     }
     let event = Event {
-        number: event_number.parse()?,
-        mpi: mpi.parse()?,
+        number: event_number,
+        mpi,
         scale: event_scale,
         alpha_qcd,
         alpha_qed,
-        signal_process_id: signal_process_id.parse()?,
-        signal_process_vertex: signal_process_vertex.parse()?,
+        signal_process_id,
+        signal_process_vertex,
         random_states,
         weights,
-        vertices: Vec::with_capacity(num_vertices.parse()?),
+        vertices: Vec::with_capacity(num_vertices),
         weight_names: Default::default(),
         xs: Default::default(),
         energy_unit: Default::default(),
@@ -191,16 +188,17 @@ fn parse_event_line(line: &str) -> Result<Event, ParseError> {
 
 fn parse_vertex_line(line: &str, event: &mut Event) -> Result<(), ParseError> {
     let rest = &line[1..];
-    let (rest, barcode) = ws_int(rest)?;
-    let (rest, status) = ws_int(rest)?;
+    let (rest, barcode) = ws_i32(rest)?;
+    let (rest, status) = ws_i32(rest)?;
     let (rest, x) = ws_double(rest)?;
     let (rest, y) = ws_double(rest)?;
     let (rest, z) = ws_double(rest)?;
     let (rest, t) = ws_double(rest)?;
-    let (rest, _num_orphans_int) = ws_int(rest)?;
-    let (rest, num_particles_out) = ws_int(rest)?;
-    let (mut rest, num_weights) = ws_int(rest)?;
-    let num_weights = num_weights.parse()?;
+    let (rest, _num_orphans_int) = ws_i32(rest)?;
+    let (rest, num_particles_out) = ws_u64(rest)?;
+    let num_particles_out = num_particles_out.try_into()?;
+    let (mut rest, num_weights) = ws_u64(rest)?;
+    let num_weights = num_weights.try_into()?;
     let mut weights = Vec::with_capacity(num_weights);
     for _ in 0..num_weights {
         let (rem, weight) = ws_double(rest)?;
@@ -208,15 +206,15 @@ fn parse_vertex_line(line: &str, event: &mut Event) -> Result<(), ParseError> {
         weights.push(weight);
     }
     let vertex = Vertex {
-        barcode: barcode.parse()?,
-        status: status.parse()?,
+        barcode,
+        status,
         x,
         y,
         z,
         t,
         weights,
         particles_in: Vec::new(),
-        particles_out: Vec::with_capacity(num_particles_out.parse()?),
+        particles_out: Vec::with_capacity(num_particles_out),
     };
     event.vertices.push(vertex);
     Ok(())
@@ -227,36 +225,34 @@ fn parse_particle_line(
     event: &mut Event,
 ) -> Result<(), ParseError> {
     let rest = &line[1..];
-    let (rest, _barcode) = ws_int(rest)?;
-    let (rest, id) = ws_int(rest)?;
+    let (rest, _barcode) = ws_i32(rest)?;
+    let (rest, id) = ws_i32(rest)?;
     let (rest, px) = ws_double(rest)?;
     let (rest, py) = ws_double(rest)?;
     let (rest, pz) = ws_double(rest)?;
     let (rest, e) = ws_double(rest)?;
     let (rest, m) = ws_double(rest)?;
-    let (rest, status) = ws_int(rest)?;
+    let (rest, status) = ws_i32(rest)?;
     let (rest, theta) = ws_double(rest)?;
     let (rest, phi) = ws_double(rest)?;
-    let (rest, end_vtx_code) = ws_int(rest)?;
-    let (mut rest, flowsize) = ws_int(rest)?;
+    let (rest, end_vtx_code) = ws_i32(rest)?;
+    let (mut rest, flowsize) = ws_i32(rest)?;
     let mut flows = BTreeMap::new();
-    for _ in 0..flowsize.parse()? {
-        let (rem, flowidx) = ws_int(rest)?;
-        let flowidx = flowidx.parse()?;
-        let (rem, flowval) = ws_int(rem)?;
-        let flowval = flowval.parse()?;
+    for _ in 0..flowsize {
+        let (rem, flowidx) = ws_i32(rest)?;
+        let (rem, flowval) = ws_i32(rem)?;
         rest = rem;
         flows.insert(flowidx, flowval);
     }
     let particle = Particle {
-        id: id.parse()?,
+        id,
         p: FourVector::txyz(e, px, py, pz),
         m,
-        status: status.parse()?,
+        status,
         theta,
         phi,
         flows,
-        end_vtx: end_vtx_code.parse()?,
+        end_vtx: end_vtx_code,
     };
     // TODO: handling of end_vtx is ReaderAsciiHepMC2.cc is obscure and undocumented
     if let Some(vertex) = event.vertices.last_mut() {
@@ -287,8 +283,8 @@ fn parse_pdf_info_line(
 ) -> Result<(), ParseError> {
     let rest = &line[1..];
 
-    let (rest, id0) = ws_int(rest)?;
-    let (rest, id1) = ws_int(rest)?;
+    let (rest, id0) = ws_i32(rest)?;
+    let (rest, id1) = ws_i32(rest)?;
     let (rest, x0) = ws_double(rest)?;
     let (rest, x1) = ws_double(rest)?;
     let (rest, scale) = ws_double(rest)?;
@@ -296,19 +292,19 @@ fn parse_pdf_info_line(
     let (rest, xf1) = ws_double(rest)?;
     let (_rest, parsed) = tuple((
         whitespace,
-        opt(int), // pdf_id0
+        opt(i32), // pdf_id0
         whitespace,
-        opt(int), // pdf_id1
+        opt(i32), // pdf_id1
     ))(rest)?;
     let (_, pdf_id0, _, pdf_id1) = parsed;
     let pdf_info = PdfInfo {
-        parton_id: [id0.parse()?, id1.parse()?],
+        parton_id: [id0, id1],
         x: [x0, x1],
         scale,
         xf: [xf0, xf1],
         pdf_id: [
-            pdf_id0.map(|id| id.parse()).transpose()?.unwrap_or(0),
-            pdf_id1.map(|id| id.parse()).transpose()?.unwrap_or(0),
+            pdf_id0.unwrap_or(0),
+            pdf_id1.unwrap_or(0),
         ],
     };
     event.pdf_info = pdf_info;
@@ -321,29 +317,29 @@ fn parse_heavy_ion_line(
 ) -> Result<(), ParseError> {
     let rest = &line[1..];
 
-    let (rest, ncoll_hard) = ws_int(rest)?;
-    let (rest, npart_proj) = ws_int(rest)?;
-    let (rest, npart_targ) = ws_int(rest)?;
-    let (rest, ncoll) = ws_int(rest)?;
-    let (rest, spectator_neutrons) = ws_int(rest)?;
-    let (rest, spectator_protons) = ws_int(rest)?;
-    let (rest, n_nwounded_collisions) = ws_int(rest)?;
-    let (rest, nwounded_n_collisions) = ws_int(rest)?;
-    let (rest, nwounded_nwounded_collisions) = ws_int(rest)?;
+    let (rest, ncoll_hard) = ws_i32(rest)?;
+    let (rest, npart_proj) = ws_i32(rest)?;
+    let (rest, npart_targ) = ws_i32(rest)?;
+    let (rest, ncoll) = ws_i32(rest)?;
+    let (rest, spectator_neutrons) = ws_i32(rest)?;
+    let (rest, spectator_protons) = ws_i32(rest)?;
+    let (rest, n_nwounded_collisions) = ws_i32(rest)?;
+    let (rest, nwounded_n_collisions) = ws_i32(rest)?;
+    let (rest, nwounded_nwounded_collisions) = ws_i32(rest)?;
     let (rest, impact_parameter) = ws_double(rest)?;
     let (rest, event_plane_angle) = ws_double(rest)?;
     let (rest, eccentricity) = ws_double(rest)?;
     let (_rest, sigma_inel_nn) = ws_double(rest)?;
     event.heavy_ion_info = Some(HeavyIonInfo {
-        ncoll_hard: ncoll_hard.parse()?,
-        npart_proj: npart_proj.parse()?,
-        npart_targ: npart_targ.parse()?,
-        ncoll: ncoll.parse()?,
-        spectator_neutrons: spectator_neutrons.parse()?,
-        spectator_protons: spectator_protons.parse()?,
-        n_nwounded_collisions: n_nwounded_collisions.parse()?,
-        nwounded_n_collisions: nwounded_n_collisions.parse()?,
-        nwounded_nwounded_collisions: nwounded_nwounded_collisions.parse()?,
+        ncoll_hard,
+        npart_proj,
+        npart_targ,
+        ncoll,
+        spectator_neutrons,
+        spectator_protons,
+        n_nwounded_collisions,
+        nwounded_n_collisions,
+        nwounded_nwounded_collisions,
         impact_parameter,
         event_plane_angle,
         eccentricity,
@@ -357,8 +353,8 @@ fn parse_weight_names_line(
     event: &mut Event,
 ) -> Result<(), ParseError> {
     let rest = &line[1..];
-    let (mut rest, nnames) = ws_int(rest)?;
-    let nnames = nnames.parse()?;
+    let (mut rest, nnames) = ws_u64(rest)?;
+    let nnames = nnames.try_into()?;
     let mut weight_names = Vec::with_capacity(nnames);
     for _ in 0..nnames {
         let (rem, (_, name)) = tuple((whitespace, string))(rest)?;
@@ -414,7 +410,7 @@ pub struct LineParseError {
 pub enum ParseError {
     Io(io::Error),
     Parse(String),
-    ConvertInt(ParseIntError),
+    ConvertInt(TryFromIntError),
     ConvertFloat(ParseFloatError),
     StrumErr(strum::ParseError),
     BadPrefix,
@@ -427,8 +423,8 @@ impl From<io::Error> for ParseError {
     }
 }
 
-impl From<ParseIntError> for ParseError {
-    fn from(err: ParseIntError) -> Self {
+impl From<TryFromIntError> for ParseError {
+    fn from(err: TryFromIntError) -> Self {
         ParseError::ConvertInt(err)
     }
 }
