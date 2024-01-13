@@ -1,10 +1,11 @@
 use std::default::Default;
 use std::fmt::Display;
-use std::io::{self, Write};
+use std::io;
 use std::mem::take;
 
 use crate::event::*;
 
+use hepmc2_macros::write_bound;
 use log::error;
 
 const DEFAULT_HEADER: &str = "HepMC::Version 2.06.09
@@ -13,14 +14,35 @@ HepMC::IO_GenEvent-START_EVENT_LISTING
 
 const DEFAULT_FOOTER: &[u8] = b"HepMC::IO_GenEvent-END_EVENT_LISTING\n";
 
+/// Write formatted data into a buffer.
+///
+/// If the `sync` feature is enabled this just passes the arguments to
+/// [`std::write`].
+///
+/// In all other cases this creates an intermediate format string (which incurs
+/// a performance cost) and uses the first argument's async `write_all` method
+/// to write to buffer.
+///
+/// Any Future is awaited and then errors are bubbled up.
+macro_rules! maybe_write {
+    ($dst: expr, $fmt: expr, $($arg: tt)*) => {{
+        #[cfg(feature = "sync")]
+        ::std::write!($dst, $fmt, $($arg)*)?;
+        #[cfg(not(feature = "sync"))]
+        $dst.write_all(::std::format!($fmt, $($arg)*).as_bytes()).await?;
+    }};
+}
+
 /// Writer for the HepMC2 format
+#[write_bound]
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
-pub struct Writer<T: Write> {
+pub struct Writer<T> {
     stream: T,
     finished: bool,
 }
 
-impl<T: Write + Default> Writer<T> {
+#[write_bound]
+impl<T: Default> Writer<T> {
     /// Retrieve the underlying writer
     pub fn into_inner(mut self) -> T {
         // ensure that the destructor doesn't do anything
@@ -29,7 +51,8 @@ impl<T: Write + Default> Writer<T> {
     }
 }
 
-impl<T: Write> Writer<T> {
+#[write_bound]
+impl<T> Writer<T> {
     /// Construct new `Writer`
     ///
     /// This automatically tries to write the mandatory HepMC header,
@@ -46,8 +69,9 @@ impl<T: Write> Writer<T> {
     /// writer.finish()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn new(stream: T) -> Result<Self, io::Error> {
-        Self::with_header(stream, DEFAULT_HEADER)
+    #[maybe_async::maybe_async]
+    pub async fn new(stream: T) -> Result<Self, io::Error> {
+        Self::with_header(stream, DEFAULT_HEADER).await
     }
 
     /// Construct new `Writer`, trying to write a custom header
@@ -66,7 +90,8 @@ impl<T: Write> Writer<T> {
     /// writer.finish()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn with_header<U: Display>(
+    #[maybe_async::maybe_async]
+    pub async fn with_header<U: Display>(
         stream: T,
         header: U,
     ) -> Result<Self, io::Error> {
@@ -74,7 +99,7 @@ impl<T: Write> Writer<T> {
             stream,
             finished: false,
         };
-        writer.write_header(header)?;
+        writer.write_header(header).await?;
         Ok(writer)
     }
 
@@ -93,8 +118,9 @@ impl<T: Write> Writer<T> {
     /// writer.finish()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn finish(mut self) -> Result<(), std::io::Error> {
-        self.ref_finish()
+    #[maybe_async::maybe_async]
+    pub async fn finish(mut self) -> Result<(), std::io::Error> {
+        self.ref_finish().await
     }
 
     /// Write an event
@@ -113,46 +139,58 @@ impl<T: Write> Writer<T> {
     /// writer.finish()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn write(&mut self, event: &Event) -> Result<(), io::Error> {
-        self.write_event_line(event)?;
+    #[maybe_async::maybe_async]
+    pub async fn write(&mut self, event: &Event) -> Result<(), io::Error> {
+        self.write_event_line(event).await?;
         if !event.weight_names.is_empty() {
-            self.write_weight_names_line(&event.weight_names)?;
+            self.write_weight_names_line(&event.weight_names).await?;
         }
-        self.write_unit_line(event)?;
-        self.write_cross_section_line(&event.xs)?;
-        self.write_pdf_info_line(&event.pdf_info)?;
+        self.write_unit_line(event).await?;
+        self.write_cross_section_line(&event.xs).await?;
+        self.write_pdf_info_line(&event.pdf_info).await?;
         if let Some(hi) = event.heavy_ion_info {
-            self.write_heavy_ion_info_line(&hi)?;
+            self.write_heavy_ion_info_line(&hi).await?;
         }
         for vertex in &event.vertices {
-            self.write_vertex_line(vertex)?;
+            self.write_vertex_line(vertex).await?;
             let particles = vertex
                 .particles_in
                 .iter()
                 .chain(vertex.particles_out.iter());
             for particle in particles {
-                self.write_particle_line(particle)?;
+                self.write_particle_line(particle).await?;
             }
         }
         Ok(())
     }
 
-    pub fn try_from(stream: T) -> Result<Self, io::Error> {
-        Self::with_header(stream, DEFAULT_HEADER)
+    #[maybe_async::maybe_async]
+    pub async fn try_from(stream: T) -> Result<Self, io::Error> {
+        Self::with_header(stream, DEFAULT_HEADER).await
     }
 
-    fn ref_finish(&mut self) -> Result<(), std::io::Error> {
-        self.stream.write_all(DEFAULT_FOOTER)?;
+    #[maybe_async::maybe_async]
+    async fn ref_finish(&mut self) -> Result<(), std::io::Error> {
+        self.stream.write_all(DEFAULT_FOOTER).await?;
         self.finished = true;
         Ok(())
     }
 
-    fn write_header<U: Display>(&mut self, header: U) -> Result<(), io::Error> {
-        write!(self.stream, "{}", header)
+    #[maybe_async::maybe_async]
+    async fn write_header<U: Display>(
+        &mut self,
+        header: U,
+    ) -> Result<(), io::Error> {
+        maybe_write!(self.stream, "{}", header);
+        Ok(())
     }
 
-    fn write_event_line(&mut self, event: &Event) -> Result<(), io::Error> {
-        write!(
+    #[maybe_async::maybe_async]
+    async fn write_event_line(
+        &mut self,
+        event: &Event,
+    ) -> Result<(), io::Error> {
+        maybe_write!(
             self.stream,
             "E {} {} {} {} {} {} {} {} 0 0 {}",
             event.number,
@@ -164,20 +202,24 @@ impl<T: Write> Writer<T> {
             event.signal_process_vertex,
             event.vertices.len(),
             event.random_states.len()
-        )?;
+        );
         for state in &event.random_states {
-            write!(self.stream, " {}", state)?;
+            maybe_write!(self.stream, " {}", state);
         }
-        write!(self.stream, " {}", event.weights.len())?;
+        maybe_write!(self.stream, " {}", event.weights.len());
         let mut buffer = ryu::Buffer::new();
         for weight in &event.weights {
-            write!(self.stream, " {}", buffer.format(*weight))?;
+            maybe_write!(self.stream, " {}", buffer.format(*weight));
         }
-        self.stream.write_all(b"\n")
+        self.stream.write_all(b"\n").await
     }
 
-    fn write_vertex_line(&mut self, vertex: &Vertex) -> Result<(), io::Error> {
-        write!(
+    #[maybe_async::maybe_async]
+    async fn write_vertex_line(
+        &mut self,
+        vertex: &Vertex,
+    ) -> Result<(), io::Error> {
+        maybe_write!(
             self.stream,
             "V {} {} {} {} {} {} 0 {} {}",
             vertex.barcode,
@@ -188,18 +230,19 @@ impl<T: Write> Writer<T> {
             ryu::Buffer::new().format(vertex.t),
             vertex.particles_in.len() + vertex.particles_out.len(),
             vertex.weights.len()
-        )?;
+        );
         for weight in &vertex.weights {
-            write!(self.stream, " {}", weight)?;
+            maybe_write!(self.stream, " {}", weight);
         }
-        self.stream.write_all(b"\n")
+        self.stream.write_all(b"\n").await
     }
 
-    fn write_particle_line(
+    #[maybe_async::maybe_async]
+    async fn write_particle_line(
         &mut self,
         particle: &Particle,
     ) -> Result<(), io::Error> {
-        write!(
+        maybe_write!(
             self.stream,
             "P 0 {} {} {} {} {} {} {} {} {} {} {}",
             particle.id,
@@ -213,48 +256,61 @@ impl<T: Write> Writer<T> {
             ryu::Buffer::new().format(particle.phi),
             particle.end_vtx,
             particle.flows.len()
-        )?;
+        );
         for (idx, val) in &particle.flows {
-            write!(self.stream, " {} {}", idx, val)?;
+            maybe_write!(self.stream, " {} {}", idx, val);
         }
-        self.stream.write_all(b"\n")
+        self.stream.write_all(b"\n").await
     }
 
-    fn write_weight_names_line(
+    #[maybe_async::maybe_async]
+    async fn write_weight_names_line(
         &mut self,
         names: &[String],
     ) -> Result<(), io::Error> {
-        write!(self.stream, "N {}", names.len())?;
+        maybe_write!(self.stream, "N {}", names.len());
         for name in names {
-            write!(self.stream, r#" "{}""#, name)?;
+            maybe_write!(self.stream, r#" "{}""#, name);
         }
-        self.stream.write_all(b"\n")
+        self.stream.write_all(b"\n").await
     }
 
-    fn write_unit_line(&mut self, event: &Event) -> Result<(), io::Error> {
-        writeln!(
+    #[maybe_async::maybe_async]
+    async fn write_unit_line(
+        &mut self,
+        event: &Event,
+    ) -> Result<(), io::Error> {
+        maybe_write!(
             self.stream,
-            "U {:?} {:?}",
-            event.energy_unit, event.length_unit
-        )
+            "U {:?} {:?}\n",
+            event.energy_unit,
+            event.length_unit
+        );
+        Ok(())
     }
 
-    fn write_cross_section_line(
+    #[maybe_async::maybe_async]
+    async fn write_cross_section_line(
         &mut self,
         xs: &CrossSection,
     ) -> Result<(), io::Error> {
-        writeln!(
+        maybe_write!(
             self.stream,
-            "C {} {}",
+            "C {} {}\n",
             ryu::Buffer::new().format(xs.cross_section),
             ryu::Buffer::new().format(xs.cross_section_error)
-        )
+        );
+        Ok(())
     }
 
-    fn write_pdf_info_line(&mut self, pdf: &PdfInfo) -> Result<(), io::Error> {
-        writeln!(
+    #[maybe_async::maybe_async]
+    async fn write_pdf_info_line(
+        &mut self,
+        pdf: &PdfInfo,
+    ) -> Result<(), io::Error> {
+        maybe_write!(
             self.stream,
-            "F {} {} {} {} {} {} {} {} {}",
+            "F {} {} {} {} {} {} {} {} {}\n",
             pdf.parton_id[0],
             pdf.parton_id[1],
             ryu::Buffer::new().format(pdf.x[0]),
@@ -264,16 +320,18 @@ impl<T: Write> Writer<T> {
             ryu::Buffer::new().format(pdf.xf[1]),
             pdf.pdf_id[0],
             pdf.pdf_id[1],
-        )
+        );
+        Ok(())
     }
 
-    fn write_heavy_ion_info_line(
+    #[maybe_async::maybe_async]
+    async fn write_heavy_ion_info_line(
         &mut self,
         hi: &HeavyIonInfo,
     ) -> Result<(), io::Error> {
-        writeln!(
+        maybe_write!(
             self.stream,
-            "H {} {} {} {} {} {} {} {} {} {} {} {} {}",
+            "H {} {} {} {} {} {} {} {} {} {} {} {} {}\n",
             hi.ncoll_hard,
             hi.npart_proj,
             hi.npart_targ,
@@ -287,18 +345,29 @@ impl<T: Write> Writer<T> {
             ryu::Buffer::new().format(hi.event_plane_angle),
             ryu::Buffer::new().format(hi.eccentricity),
             ryu::Buffer::new().format(hi.sigma_inel_nn),
-        )
+        );
+        Ok(())
     }
 }
 
-impl<T: Write> Drop for Writer<T> {
+#[write_bound]
+impl<T> Drop for Writer<T> {
     fn drop(&mut self) {
         if !self.finished {
             error!("Hepmc2 writer dropped before finished.");
             error!("Call finish() manually to fix this error.");
+            #[cfg(feature = "sync")]
             if let Err(err) = self.ref_finish() {
                 error!("Error writing footer: {}", err);
             }
+            #[cfg(feature = "tokio")]
+            tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(async {
+                    if let Err(err) = self.ref_finish().await {
+                        error!("Error writing footer: {}", err);
+                    }
+                })
+            });
         }
     }
 }
