@@ -41,7 +41,8 @@ impl<T> Writer<T> {
     ///
     /// # Example
     ///
-    /// ```rust
+    #[cfg_attr(feature = "sync", doc = "```")]
+    #[cfg_attr(not(feature = "sync"), doc = "```ignore")]
     /// use hepmc2::writer::Writer;
     ///
     /// let mut output = Vec::new();
@@ -49,6 +50,18 @@ impl<T> Writer<T> {
     /// // always call finish at the end
     /// writer.finish()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    ///
+    #[cfg_attr(feature = "sync", doc = "```ignore")]
+    #[cfg_attr(not(feature = "sync"), doc = "```")]
+    /// # tokio_test::block_on(async {
+    /// use hepmc2::writer::Writer;
+    ///
+    /// let mut output = Vec::new();
+    /// let mut writer = Writer::new(&mut output).await.unwrap();
+    /// // always call finish at the end
+    /// writer.finish().await.unwrap();
+    /// # })
     /// ```
     #[maybe_async::maybe_async]
     pub async fn new(stream: T) -> Result<Self, io::Error> {
@@ -62,7 +75,10 @@ impl<T> Writer<T> {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ## Sync
+    /// 
+    #[cfg_attr(feature = "sync", doc = "```")]
+    #[cfg_attr(not(feature = "sync"), doc = "```ignore")]
     /// use hepmc2::writer::Writer;
     ///
     /// let mut output = Vec::new();
@@ -70,6 +86,20 @@ impl<T> Writer<T> {
     /// // always call finish at the end
     /// writer.finish()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    /// 
+    /// ## Async
+    /// 
+    #[cfg_attr(feature = "sync", doc = "```ignore")]
+    #[cfg_attr(not(feature = "sync"), doc = "```")]
+    /// # tokio_test::block_on(async {
+    /// use hepmc2::writer::Writer;
+    ///
+    /// let mut output = Vec::new();
+    /// let mut writer = Writer::with_header(output, "").await.unwrap();
+    /// // always call finish at the end
+    /// writer.finish().await.unwrap();
+    /// # })
     /// ```
     #[maybe_async::maybe_async]
     pub async fn with_header<U: Display>(
@@ -90,14 +120,31 @@ impl<T> Writer<T> {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ## Sync
+    /// 
+    #[cfg_attr(feature = "sync", doc = "```")]
+    #[cfg_attr(not(feature = "sync"), doc = "```ignore")]
     /// use hepmc2::writer::Writer;
-    ///
+    /// 
     /// let mut output = Vec::new();
     /// let mut writer = Writer::new(&mut output)?;
     /// // always call finish at the end
     /// writer.finish()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    /// 
+    /// ## Async
+    /// 
+    #[cfg_attr(feature = "sync", doc = "```ignore")]
+    #[cfg_attr(not(feature = "sync"), doc = "```")]
+    /// # tokio_test::block_on(async {
+    /// use hepmc2::writer::Writer;
+    /// 
+    /// let mut output = Vec::new();
+    /// let mut writer = Writer::new(&mut output).await.unwrap();
+    /// // always call finish at the end
+    /// writer.finish().await.unwrap();
+    /// # })
     /// ```
     #[maybe_async::maybe_async]
     pub async fn finish(mut self) -> Result<(), std::io::Error> {
@@ -108,10 +155,13 @@ impl<T> Writer<T> {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ## Sync
+    /// 
+    #[cfg_attr(feature = "sync", doc = "```")]
+    #[cfg_attr(not(feature = "sync"), doc = "```ignore")]
     /// use hepmc2::writer::Writer;
     /// use hepmc2::event::Event;
-    ///
+    /// 
     /// let mut output = Vec::new();
     /// let mut writer = Writer::new(&mut output)?;
     /// let event = Event::default();
@@ -119,6 +169,23 @@ impl<T> Writer<T> {
     /// // always call finish at the end
     /// writer.finish()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    /// 
+    /// ## Async
+    /// 
+    #[cfg_attr(feature = "sync", doc = "```ignore")]
+    #[cfg_attr(not(feature = "sync"), doc = "```")]
+    /// # tokio_test::block_on(async {
+    /// use hepmc2::writer::Writer;
+    /// use hepmc2::event::Event;
+    /// 
+    /// let mut output = Vec::new();
+    /// let mut writer = Writer::new(&mut output).await.unwrap();
+    /// let event = Event::default();
+    /// writer.write(&event).await.unwrap();
+    /// // always call finish at the end
+    /// writer.finish().await.unwrap();
+    /// # })
     /// ```
     #[maybe_async::maybe_async]
     pub async fn write(&mut self, event: &Event) -> Result<(), io::Error> {
