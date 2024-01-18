@@ -10,7 +10,8 @@
 //!
 //! # Example
 //!
-//! ```rust,no_run
+#![cfg_attr(feature = "sync", doc = "```no_run")]
+#![cfg_attr(not(feature = "sync"), doc = "```ignore")]
 //! // Read events from `events_in.hepmc2` and write them to `events_out.hepmc2`
 //! use hepmc2::{Reader, Writer};
 //!
@@ -31,6 +32,61 @@
 //! writer.finish()?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
+//! 
+//! ## Async API
+//!
+//! By default this crate enables the `sync` feature which exposes a sync API. You
+//! can however switch to using a `tokio`-backed async API by disabling the `sync`
+//! feature and enabling the `tokio` feature.
+//!
+//! Either run the following in the root of your crate:
+//!
+//! ```sh
+//! cargo add hepmc2 --no-default-features -F tokio
+//! ```
+//!
+//! or make sure a line like the following is present in your `Cargo.toml`:
+//!
+//! ```toml
+//! hepmc2 = { version = "0.6.0", default-features = false, features = ["tokio"] }
+//! ```
+//!
+//! The async API is exactly the same as the sync one but IO operations will return
+//! futures that you will, as usual, need to call `await` on. For examples, generate
+//! the async API documentation in the root of this project:
+//!
+//! ```sh
+//! cargo doc --open --no-default-features -F tokio
+//! ```
+//! 
+//! ### Example
+//! 
+#![cfg_attr(feature = "sync", doc = "```ignore")]
+#![cfg_attr(not(feature = "sync"), doc = "```no_run")]
+//! # async fn try_main() -> Result<(), Box<dyn std::error::Error>> {
+//! // Read events from `events_in.hepmc2` and write them to `events_out.hepmc2`
+//! use hepmc2::{Reader, Writer};
+//!
+//! use tokio::io::BufReader;
+//! use tokio::fs::File;
+//!
+//! let input = BufReader::new(File::open("events_in.hepmc2").await?);
+//! let mut in_events = Reader::from(input);
+//!
+//! let output = File::create("events_out.hepmc2").await?;
+//! let mut writer = Writer::try_from(output).await?;
+//!
+//! while let Some(event) = in_events.next().await {
+//!    let event = event?;
+//!    println!("Current cross section: {}",  event.xs);
+//!    writer.write(&event).await?
+//! }
+//! writer.finish().await?;
+//! # Ok(())
+//! # }
+//! # tokio_test::block_on(async {try_main().await.unwrap()})
+//! ```
+
 pub mod event;
 pub mod reader;
 pub mod writer;
