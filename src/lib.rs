@@ -10,8 +10,8 @@
 //!
 //! # Example
 //!
-//! ```rust,no_run
-//! # fn try_main() -> Result<(), Box<dyn std::error::Error>> {
+#![cfg_attr(feature = "sync", doc = "```no_run")]
+#![cfg_attr(not(feature = "sync"), doc = "```ignore")]
 //! // Read events from `events_in.hepmc2` and write them to `events_out.hepmc2`
 //! use hepmc2::{Reader, Writer};
 //!
@@ -30,9 +30,63 @@
 //!    writer.write(&event)?
 //! }
 //! writer.finish()?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//! 
+//! ## Async API
+//!
+//! By default this crate enables the `sync` feature which exposes a sync API. You
+//! can however switch to using a `tokio`-backed async API by disabling the `sync`
+//! feature and enabling the `tokio` feature.
+//!
+//! Either run the following in the root of your crate:
+//!
+//! ```sh
+//! cargo add hepmc2 --no-default-features -F tokio
+//! ```
+//!
+//! or make sure a line like the following is present in your `Cargo.toml`:
+//!
+//! ```toml
+//! hepmc2 = { version = "0.6.0", default-features = false, features = ["tokio"] }
+//! ```
+//!
+//! The async API is exactly the same as the sync one but IO operations will return
+//! futures that you will, as usual, need to call `await` on. For examples, generate
+//! the async API documentation in the root of this project:
+//!
+//! ```sh
+//! cargo doc --open --no-default-features -F tokio
+//! ```
+//! 
+//! ### Example
+//! 
+#![cfg_attr(feature = "sync", doc = "```ignore")]
+#![cfg_attr(not(feature = "sync"), doc = "```no_run")]
+//! # async fn try_main() -> Result<(), Box<dyn std::error::Error>> {
+//! // Read events from `events_in.hepmc2` and write them to `events_out.hepmc2`
+//! use hepmc2::{Reader, Writer};
+//!
+//! use tokio::io::BufReader;
+//! use tokio::fs::File;
+//!
+//! let input = BufReader::new(File::open("events_in.hepmc2").await?);
+//! let mut in_events = Reader::from(input);
+//!
+//! let output = File::create("events_out.hepmc2").await?;
+//! let mut writer = Writer::try_from(output).await?;
+//!
+//! while let Some(event) = in_events.next().await {
+//!    let event = event?;
+//!    println!("Current cross section: {}",  event.xs);
+//!    writer.write(&event).await?
+//! }
+//! writer.finish().await?;
 //! # Ok(())
 //! # }
+//! # tokio_test::block_on(async {try_main().await.unwrap()})
 //! ```
+
 pub mod event;
 pub mod reader;
 pub mod writer;
@@ -41,34 +95,56 @@ pub use crate::event::Event;
 pub use crate::reader::Reader;
 pub use crate::writer::Writer;
 
+#[cfg(all(feature = "sync", feature = "tokio"))]
+compile_error!("One and only one sync/async feature must be enabled");
+#[cfg(not(any(feature = "sync", feature = "tokio")))]
+compile_error!("One and only one sync/async feature must be enabled");
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn tst_read() {
+    #[maybe_async::test(
+        feature = "sync",
+        async(
+            all(not(feature = "sync"), feature = "tokio"),
+            tokio::test(flavor = "multi_thread")
+        )
+    )]
+    async fn tst_read() {
         let mut reader = reader::Reader::from(EVENT_TXT);
-        assert!(reader.next().unwrap().is_ok());
-        assert!(reader.next().is_none());
+        let next_line = reader.next().await.unwrap();
+        assert!(next_line.is_ok());
+        let next_line = reader.next().await;
+        assert!(next_line.is_none());
     }
 
-    #[test]
-    fn tst_read_write() {
+    #[maybe_async::test(
+        feature = "sync",
+        async(
+            all(not(feature = "sync"), feature = "tokio"),
+            tokio::test(flavor = "multi_thread")
+        )
+    )]
+    async fn tst_read_write() {
+        #[cfg(feature = "sync")]
         use std::io::BufReader;
+        #[cfg(feature = "tokio")]
+        use tokio::io::BufReader;
 
         let mut reader = reader::Reader::from(EVENT_TXT);
         let mut buf = Vec::<u8>::new();
-        let event = reader.next().unwrap().unwrap();
+        let event = reader.next().await.unwrap().unwrap();
         {
-            let mut writer = writer::Writer::try_from(&mut buf).unwrap();
-            writer.write(&event).unwrap();
+            let mut writer = writer::Writer::try_from(&mut buf).await.unwrap();
+            writer.write(&event).await.unwrap();
         }
         let mut reader = reader::Reader::from(BufReader::new(buf.as_slice()));
-        let event = reader.next().unwrap().unwrap();
+        let event = reader.next().await.unwrap().unwrap();
         let mut buf2 = Vec::<u8>::new();
-        let mut writer = writer::Writer::try_from(&mut buf2).unwrap();
-        writer.write(&event).unwrap();
-        writer.finish().unwrap();
+        let mut writer = writer::Writer::try_from(&mut buf2).await.unwrap();
+        writer.write(&event).await.unwrap();
+        writer.finish().await.unwrap();
         use std::str::from_utf8;
         assert_eq!(from_utf8(&buf), from_utf8(&buf2));
     }
