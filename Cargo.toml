@@ -18,7 +18,7 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 nom = "7"
 ryu = "1.0"
-strum = { version = "0.25", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 thiserror = "1.0"
 hepmc2-macros = { version = "0.1.0", path = "hepmc2-macros" }
 tokio = { version = "1.35", features = [
