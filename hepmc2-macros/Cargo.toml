@@ -2,6 +2,8 @@
 name = "hepmc2-macros"
 version = "0.1.0"
 edition = "2021"
+description = "Macros for the hepmc2 crate"
+license = "GPL-3.0-or-later"
 
 [lib]
 proc-macro = true
