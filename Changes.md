@@ -1,3 +1,7 @@
+# Version 0.7.0
+
+- Added `tokio` feature for async input/output.
+
 # Version 0.6.0
 
 - Update to rust 2021.
